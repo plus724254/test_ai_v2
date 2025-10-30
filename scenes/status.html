@@ -125,7 +125,7 @@
             let html = '';
 
             if (tab === 'stats') {
-                html = `
+                html = `<pre>
 【基本信息】
 名稱: ${gameState.player.name}
 職業: ${getClassName()}
@@ -148,7 +148,8 @@ ${getMpBar()}
 【經驗值】
 經驗: ${gameState.player.exp}/${gameState.player.expToLevel}
 ${getExpBar()}
-                `;
+</pre>`;
+                document.getElementById('content').innerHTML = html;
             } else if (tab === 'equipment') {
                 html = '<h3 style="margin-bottom: 15px; color: #ffff00;">【裝備欄位】</h3>';
 
@@ -156,11 +157,12 @@ ${getExpBar()}
                 html += '<div class="item-slot">';
                 html += '<strong>武器</strong>';
                 if (gameState.equipped.weapon) {
-                    html += `\n${gameState.equipped.weapon.name}
-攻擊+${gameState.equipped.weapon.attack}`;
-                    html += `\n<button onclick="unequipWeapon()" style="margin-top: 8px;">卸下</button>`;
+                    const weaponName = gameState.equipped.weapon.name || '未知武器';
+                    const weaponAttack = gameState.equipped.weapon.attack || 0;
+                    html += `<br>${weaponName}<br>攻擊+${weaponAttack}`;
+                    html += `<br><button onclick="unequipWeapon()" style="margin-top: 8px;">卸下</button>`;
                 } else {
-                    html += '\n【未裝備】';
+                    html += '<br>【未裝備】';
                 }
                 html += '</div>';
 
@@ -168,11 +170,12 @@ ${getExpBar()}
                 html += '<div class="item-slot">';
                 html += '<strong>防具</strong>';
                 if (gameState.equipped.armor) {
-                    html += `\n${gameState.equipped.armor.name}
-防禦+${gameState.equipped.armor.defense}`;
-                    html += `\n<button onclick="unequipArmor()" style="margin-top: 8px;">卸下</button>`;
+                    const armorName = gameState.equipped.armor.name || '未知防具';
+                    const armorDefense = gameState.equipped.armor.defense || 0;
+                    html += `<br>${armorName}<br>防禦+${armorDefense}`;
+                    html += `<br><button onclick="unequipArmor()" style="margin-top: 8px;">卸下</button>`;
                 } else {
-                    html += '\n【未裝備】';
+                    html += '<br>【未裝備】';
                 }
                 html += '</div>';
 
@@ -182,7 +185,9 @@ ${getExpBar()}
                     html += '<div style="color: #666666;">沒有其他武器</div>';
                 } else {
                     gameState.inventory.weapons.forEach((weapon, idx) => {
-                        html += `<button onclick="equipWeaponFromInventory(${idx})" style="text-align: left;">${weapon.name} (+${weapon.attack} 攻擊)</button>`;
+                        const weaponName = weapon.name || '未知武器';
+                        const weaponAttack = weapon.attack || 0;
+                        html += `<button onclick="equipWeaponFromInventory(${idx})" style="text-align: left;">${weaponName} (+${weaponAttack} 攻擊)</button>`;
                     });
                 }
 
@@ -192,7 +197,9 @@ ${getExpBar()}
                     html += '<div style="color: #666666;">沒有其他防具</div>';
                 } else {
                     gameState.inventory.armor.forEach((armor, idx) => {
-                        html += `<button onclick="equipArmorFromInventory(${idx})" style="text-align: left;">${armor.name} (+${armor.defense} 防禦)</button>`;
+                        const armorName = armor.name || '未知防具';
+                        const armorDefense = armor.defense || 0;
+                        html += `<button onclick="equipArmorFromInventory(${idx})" style="text-align: left;">${armorName} (+${armorDefense} 防禦)</button>`;
                     });
                 }
             } else if (tab === 'inventory') {
@@ -202,15 +209,19 @@ ${getExpBar()}
                     html += '<div style="color: #666666;">背包是空的</div>';
                 } else {
                     gameState.inventory.items.forEach((item, idx) => {
+                        const itemName = item.name || '未知物品';
                         html += `<div style="padding: 8px; border: 1px solid #00ff00; margin-bottom: 5px; background-color: #0a1a0a;">
-${item.name}
+${itemName}
 <button onclick="useItem(${idx})" style="margin-top: 5px;">使用</button>
 </div>`;
                     });
                 }
             }
 
-            document.getElementById('content').innerText = html;
+            // 只有非stats標籤需要在這裡設置innerHTML（stats已在上面設置）
+            if (tab !== 'stats') {
+                document.getElementById('content').innerHTML = html;
+            }
         }
 
         function getClassName() {

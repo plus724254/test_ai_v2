@@ -229,7 +229,18 @@ function goToScene(sceneName) {
         gameState.progress.visitedLocations.push(sceneName);
     }
     saveGame();
-    window.location.href = `scenes/${sceneName}.html`;
+
+    // 判斷當前是否在 scenes 文件夾內
+    const currentPath = window.location.pathname;
+    const isInScenes = currentPath.includes('/scenes/');
+
+    if (isInScenes) {
+        // 在 scenes 內部，直接訪問同級文件
+        window.location.href = `${sceneName}.html`;
+    } else {
+        // 在根目錄，進入 scenes 文件夾
+        window.location.href = `scenes/${sceneName}.html`;
+    }
 }
 
 // ===== 工具函式 =====
