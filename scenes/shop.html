@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>商店 - 復古RPG</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background-color: #1a1a1a;
+            color: #00ff00;
+            font-family: monospace;
+            line-height: 1.6;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .content {
+            border: 2px solid #00ff00;
+            padding: 20px;
+            margin-bottom: 20px;
+            background-color: #0a0a0a;
+            white-space: pre-wrap;
+        }
+        button {
+            background-color: #003300;
+            color: #00ff00;
+            border: 1px solid #00ff00;
+            padding: 10px 15px;
+            margin: 5px 5px 5px 0;
+            cursor: pointer;
+            font-family: monospace;
+            display: block;
+            width: 100%;
+            margin-bottom: 5px;
+        }
+        button:hover {
+            background-color: #005500;
+        }
+        button:disabled {
+            background-color: #001100;
+            color: #666666;
+            cursor: not-allowed;
+        }
+        .stats {
+            border: 1px dashed #00ff00;
+            padding: 10px;
+            margin-bottom: 15px;
+            background-color: #0a1a0a;
+            white-space: pre;
+            font-size: 12px;
+        }
+        .message {
+            border: 1px solid #ffff00;
+            padding: 10px;
+            margin-bottom: 15px;
+            background-color: #1a1a00;
+            color: #ffff00;
+        }
+        .tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 15px;
+        }
+        .tab-button {
+            flex: 1;
+            padding: 8px;
+            background-color: #003300;
+            color: #00ff00;
+            border: 1px solid #00ff00;
+            cursor: pointer;
+            font-family: monospace;
+        }
+        .tab-button.active {
+            background-color: #006600;
+        }
+        .tab-button:hover {
+            background-color: #005500;
+        }
+        .item-list {
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="stats" id="playerStats"></div>
+
+        <div class="content" id="sceneText"></div>
+
+        <div class="tabs">
+            <button class="tab-button active" onclick="switchTab('buy')">【購買】</button>
+            <button class="tab-button" onclick="switchTab('sell')">【販賣】</button>
+            <button class="tab-button" onclick="switchTab('inventory')">【背包】</button>
+        </div>
+
+        <div id="message" style="display: none;"></div>
+
+        <div id="itemsSection" class="item-list"></div>
+
+        <button onclick="goToScene('town')" style="margin-top: 20px;">返回村莊</button>
+    </div>
+
+    <script src="../game.js"></script>
+    <script src="../data.js"></script>
+    <script>
+        const shop = {
+            weapons: [
+                { id: 'ironSword', name: '鐵劍', attack: 5, price: 100 },
+                { id: 'steelSword', name: '鋼劍', attack: 10, price: 300 },
+                { id: 'goldSword', name: '黃金劍', attack: 15, price: 800 }
+            ],
+            armor: [
+                { id: 'clothArmor', name: '布甲', defense: 2, price: 50 },
+                { id: 'leatherArmor', name: '皮甲', defense: 4, price: 150 },
+                { id: 'chainMail', name: '鎖甲', defense: 7, price: 400 }
+            ],
+            items: [
+                { id: 'potion', name: '紅色藥水', type: 'potion', price: 50 },
+                { id: 'mpPotion', name: '藍色藥水', type: 'mpPotion', price: 50 },
+                { id: 'fullPotion', name: '滿狀態藥水', type: 'fullPotion', price: 150 }
+            ]
+        };
+
+        function renderScene() {
+            const scene = SCENES.shop;
+            document.getElementById('playerStats').innerText = displayPlayerStats();
+            document.getElementById('sceneText').innerText = scene.description;
+            switchTab('buy');
+        }
+
+        function switchTab(tab) {
+            // 更新按鈕樣式
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            let html = '';
+
+            if (tab === 'buy') {
+                html = '<h3 style="margin-bottom: 10px; color: #ffff00;">【購買物品】</h3>';
+
+                html += '<h4 style="margin-top: 15px; color: #ffff00;">武器：</h4>';
+                shop.weapons.forEach(w => {
+                    const canAfford = gameState.player.gold >= w.price;
+                    html += `<button onclick="buyWeapon('${w.id}', ${w.price})" ${!canAfford ? 'disabled' : ''}>${w.name} | 攻擊+${w.attack} | ${w.price}G</button>`;
+                });
+
+                html += '<h4 style="margin-top: 15px; color: #ffff00;">防具：</h4>';
+                shop.armor.forEach(a => {
+                    const canAfford = gameState.player.gold >= a.price;
+                    html += `<button onclick="buyArmor('${a.id}', ${a.price})" ${!canAfford ? 'disabled' : ''}>${a.name} | 防禦+${a.defense} | ${a.price}G</button>`;
+                });
+
+                html += '<h4 style="margin-top: 15px; color: #ffff00;">消耗品：</h4>';
+                shop.items.forEach(i => {
+                    const canAfford = gameState.player.gold >= i.price;
+                    html += `<button onclick="buyItem('${i.id}', ${i.price})" ${!canAfford ? 'disabled' : ''}>${i.name} | ${i.price}G</button>`;
+                });
+            } else if (tab === 'sell') {
+                html = '<h3 style="margin-bottom: 10px; color: #ffff00;">【販賣物品】</h3>';
+                html += '<p style="color: #999999;">（目前版本不支援販賣功能）</p>';
+            } else if (tab === 'inventory') {
+                html = '<h3 style="margin-bottom: 10px; color: #ffff00;">【背包物品】</h3>';
+                if (gameState.inventory.items.length === 0) {
+                    html += '<p style="color: #999999;">背包是空的</p>';
+                } else {
+                    gameState.inventory.items.forEach((item, idx) => {
+                        html += `<div style="padding: 5px; border: 1px solid #00ff00; margin-bottom: 5px;">${item.name}</div>`;
+                    });
+                }
+            }
+
+            document.getElementById('itemsSection').innerHTML = html;
+        }
+
+        function buyWeapon(weaponId, price) {
+            if (gameState.player.gold < price) {
+                showMessage('金幣不足！');
+                return;
+            }
+
+            gameState.player.gold -= price;
+            const weapon = shop.weapons.find(w => w.id === weaponId);
+            gameState.inventory.weapons.push({ ...weapon });
+
+            showMessage(`購買了 ${weapon.name}！\n剩餘金幣: ${gameState.player.gold}G`);
+            saveGame();
+            setTimeout(() => {
+                renderScene();
+            }, 1500);
+        }
+
+        function buyArmor(armorId, price) {
+            if (gameState.player.gold < price) {
+                showMessage('金幣不足！');
+                return;
+            }
+
+            gameState.player.gold -= price;
+            const armor = shop.armor.find(a => a.id === armorId);
+            gameState.inventory.armor.push({ ...armor });
+
+            showMessage(`購買了 ${armor.name}！\n剩餘金幣: ${gameState.player.gold}G`);
+            saveGame();
+            setTimeout(() => {
+                renderScene();
+            }, 1500);
+        }
+
+        function buyItem(itemId, price) {
+            if (gameState.player.gold < price) {
+                showMessage('金幣不足！');
+                return;
+            }
+
+            gameState.player.gold -= price;
+            const item = shop.items.find(i => i.id === itemId);
+            gameState.inventory.items.push({ ...item });
+
+            showMessage(`購買了 ${item.name}！\n剩餘金幣: ${gameState.player.gold}G`);
+            saveGame();
+            setTimeout(() => {
+                renderScene();
+            }, 1500);
+        }
+
+        function showMessage(text) {
+            const msgDiv = document.getElementById('message');
+            msgDiv.innerText = text;
+            msgDiv.style.display = 'block';
+            document.getElementById('itemsSection').style.display = 'none';
+        }
+
+        window.addEventListener('load', function() {
+            initGame();
+            renderScene();
+        });
+    </script>
+</body>
+</html>

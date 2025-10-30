@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>復古RPG - 遊戲開始</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background-color: #1a1a1a;
+            color: #00ff00;
+            font-family: monospace;
+            line-height: 1.6;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .title {
+            text-align: center;
+            margin-bottom: 30px;
+            white-space: pre;
+        }
+        .content {
+            border: 2px solid #00ff00;
+            padding: 20px;
+            margin-bottom: 20px;
+            background-color: #0a0a0a;
+        }
+        .story {
+            white-space: pre-wrap;
+            margin-bottom: 20px;
+        }
+        input, select {
+            background-color: #1a1a1a;
+            color: #00ff00;
+            border: 1px solid #00ff00;
+            padding: 8px;
+            margin: 5px 0;
+            font-family: monospace;
+            width: 100%;
+        }
+        button {
+            background-color: #003300;
+            color: #00ff00;
+            border: 1px solid #00ff00;
+            padding: 10px 20px;
+            margin: 10px 5px 10px 0;
+            cursor: pointer;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        button:hover {
+            background-color: #005500;
+        }
+        .button-group {
+            margin: 20px 0;
+        }
+        .section {
+            margin-bottom: 30px;
+        }
+        .info {
+            color: #ffff00;
+            margin-top: 10px;
+        }
+        .class-info {
+            margin-top: 15px;
+            padding: 10px;
+            background-color: #0a1a0a;
+        }
+        .class-option {
+            padding: 10px;
+            margin: 5px 0;
+            border: 1px solid #00ff00;
+            cursor: pointer;
+        }
+        .class-option:hover {
+            background-color: #003300;
+        }
+        .class-option.selected {
+            background-color: #006600;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="title">
+╔════════════════════════════════╗
+║  魔幻大陸 - 文字冒險RPG遊戲   ║
+║     RETRO TEXT ADVENTURE       ║
+╚════════════════════════════════╝
+        </div>
+
+        <div id="mainMenu" class="section">
+            <div class="content">
+                <div class="story" id="menuText">
+▌ ▌ ▌  歡迎冒險家！ ▌ ▌ ▌
+
+這是一個純文字的復古RPG遊戲。
+你將在魔幻大陸上冒險，
+戰鬥怪物、收集寶藏、拯救世界。
+
+選擇一個選項開始你的冒險！
+                </div>
+                <div class="button-group">
+                    <button onclick="showNewGame()">【新遊戲】</button>
+                    <button onclick="showLoadGame()" id="loadBtn" style="display:none;">【繼續遊戲】</button>
+                    <button onclick="showGuide()">【遊戲說明】</button>
+                    <button onclick="showAbout()">【關於遊戲】</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="newGameMenu" class="section" style="display:none;">
+            <div class="content">
+                <h2>創建新角色</h2>
+                <p class="info">在開始冒險前，請告訴我們你是誰</p>
+
+                <div class="section">
+                    <label>角色名稱：</label>
+                    <input type="text" id="playerName" placeholder="輸入你的角色名稱" maxlength="20">
+                </div>
+
+                <div class="section">
+                    <label>選擇職業：</label>
+                    <div class="class-info">
+                        <div class="class-option" onclick="selectClass('warrior', this)">
+【戰士】 - 高HP、高防禦、攻擊力強
+HP: 40  MP: 10  攻擊: 10  防禦: 8  速度: 5
+適合新手
+                        </div>
+                        <div class="class-option" onclick="selectClass('mage', this)">
+【法師】 - 高MP、高攻擊力、防禦低
+HP: 20  MP: 40  攻擊: 6   防禦: 3  速度: 7
+適合進階玩家
+                        </div>
+                        <div class="class-option" onclick="selectClass('rogue', this)">
+【盜賊】 - 均衡職業、速度快
+HP: 25  MP: 15  攻擊: 9   防禦: 4  速度: 9
+適合進階玩家
+                        </div>
+                        <div class="class-option" onclick="selectClass('paladin', this)">
+【聖騎】 - 高HP、高防禦、均衡MP
+HP: 35  MP: 25  攻擊: 8   防禦: 9  速度: 6
+推薦職業
+                        </div>
+                    </div>
+                </div>
+
+                <div class="button-group">
+                    <button onclick="startNewGame()">開始冒險</button>
+                    <button onclick="showMenu()">返回菜單</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="guideMenu" class="section" style="display:none;">
+            <div class="content">
+                <div class="story">
+【遊戲說明】
+
+=== 基本操作 ===
+> 點擊按鈕在不同場景間移動
+> 選擇行動進行戰鬥或對話
+> 定期保存遊戲進度
+
+=== 系統介紹 ===
+
+【角色屬性】
+- HP: 生命值，為0時遊戲結束
+- MP: 魔法值，使用技能需要消耗
+- 攻擊: 影響傷害輸出
+- 防禦: 減少受到的傷害
+- 速度: 影響戰鬥順序
+
+【戰鬥系統】
+> 在每回合選擇行動
+> 攻擊: 造成基本傷害
+> 技能: 消耗MP造成額外傷害或輔助
+> 道具: 使用物品恢復或增強
+> 逃跑: 試圖離開戰鬥
+
+【經驗升級】
+> 擊敗敵人獲得經驗值
+> 經驗值滿後自動升級
+> 升級會提升所有屬性
+
+【物品系統】
+> 購買武器和防具提升能力
+> 收集道具用於戰鬥
+> 任務物品用於解鎖區域
+
+=== 提示 ===
+> 定期回城補給和販賣物品
+> 升級裝備會大幅提升實力
+> 存檔可以隨時繼續遊戲
+> 探索所有區域可發現隱藏寶藏
+                </div>
+                <div class="button-group">
+                    <button onclick="showMenu()">返回菜單</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="aboutMenu" class="section" style="display:none;">
+            <div class="content">
+                <div class="story">
+【關於遊戲】
+
+=== 遊戲介紹 ===
+這是一款純文字的復古RPG遊戲，
+靈感來自於80~90年代的經典文字冒險遊戲。
+沒有華麗的圖像，只有想像力和文字。
+
+=== 設計理念 ===
+✓ 純文字界面，最小化設計
+✓ 復古終端機風格
+✓ 專注於遊戲玩法而非視覺效果
+✓ 完整的RPG系統（戰鬥、升級、物品）
+
+=== 特色 ===
+> 50+ 個獨特的遊戲場景
+> 豐富的敵人和Boss戰鬥
+> 完整的升級和裝備系統
+> 多個結局和隱藏內容
+> 自動存檔功能
+
+=== 技術信息 ===
+純HTML + JavaScript實現
+不使用任何外部框架或CSS預處理器
+
+=== 鳴謝 ===
+感謝所有復古RPG遊戲的啟發！
+
+享受你的冒險！
+                </div>
+                <div class="button-group">
+                    <button onclick="showMenu()">返回菜單</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="game.js"></script>
+    <script>
+        let selectedClass = null;
+
+        function showMenu() {
+            document.getElementById('mainMenu').style.display = 'block';
+            document.getElementById('newGameMenu').style.display = 'none';
+            document.getElementById('guideMenu').style.display = 'none';
+            document.getElementById('aboutMenu').style.display = 'none';
+            checkLoadGame();
+        }
+
+        function showNewGame() {
+            document.getElementById('mainMenu').style.display = 'none';
+            document.getElementById('newGameMenu').style.display = 'block';
+            document.getElementById('guideMenu').style.display = 'none';
+            document.getElementById('aboutMenu').style.display = 'none';
+        }
+
+        function showGuide() {
+            document.getElementById('mainMenu').style.display = 'none';
+            document.getElementById('newGameMenu').style.display = 'none';
+            document.getElementById('guideMenu').style.display = 'block';
+            document.getElementById('aboutMenu').style.display = 'none';
+        }
+
+        function showAbout() {
+            document.getElementById('mainMenu').style.display = 'none';
+            document.getElementById('newGameMenu').style.display = 'none';
+            document.getElementById('guideMenu').style.display = 'none';
+            document.getElementById('aboutMenu').style.display = 'block';
+        }
+
+        function showLoadGame() {
+            if (hasSave()) {
+                if (confirm('確認要繼續上一次的遊戲嗎？')) {
+                    loadGame();
+                    goToScene(gameState.progress.currentScene);
+                }
+            }
+        }
+
+        function checkLoadGame() {
+            const loadBtn = document.getElementById('loadBtn');
+            if (hasSave()) {
+                loadBtn.style.display = 'inline-block';
+            } else {
+                loadBtn.style.display = 'none';
+            }
+        }
+
+        function selectClass(classType, element) {
+            document.querySelectorAll('.class-option').forEach(el => {
+                el.classList.remove('selected');
+            });
+            element.classList.add('selected');
+            selectedClass = classType;
+        }
+
+        function startNewGame() {
+            const playerName = document.getElementById('playerName').value.trim();
+
+            if (!playerName) {
+                alert('請輸入角色名稱！');
+                return;
+            }
+
+            if (!selectedClass) {
+                alert('請選擇職業！');
+                return;
+            }
+
+            // 重置遊戲狀態
+            Object.assign(gameState, {
+                player: {
+                    name: playerName,
+                    level: 1,
+                    exp: 0,
+                    expToLevel: 100,
+                    hp: 30,
+                    maxHp: 30,
+                    mp: 20,
+                    maxMp: 20,
+                    attack: 8,
+                    defense: 5,
+                    speed: 6,
+                    gold: 0
+                },
+                inventory: {
+                    items: [{ id: 'potion', name: '紅色藥水', type: 'potion' }],
+                    weapons: [],
+                    armor: [],
+                    accessories: []
+                },
+                equipped: {
+                    weapon: null,
+                    armor: null,
+                    accessory: null
+                },
+                progress: {
+                    currentScene: 'town',
+                    visitedLocations: [],
+                    completedQuests: [],
+                    defeatedBosses: []
+                }
+            });
+
+            // 套用職業
+            createCharacter(playerName, selectedClass);
+
+            // 顯示故事
+            alert(`
+歡迎，${playerName}！
+
+你是一位${selectedClass === 'warrior' ? '戰士' : selectedClass === 'mage' ? '法師' : selectedClass === 'rogue' ? '盜賊' : '聖騎'}。
+
+你的冒險，從現在開始...
+
+${STORY.intro}
+            `);
+
+            // 保存並進入遊戲
+            saveGame();
+            goToScene('town');
+        }
+
+        // 初始化菜單
+        window.addEventListener('load', function() {
+            checkLoadGame();
+        });
+    </script>
+</body>
+</html>

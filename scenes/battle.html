@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>戰鬥 - 復古RPG</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background-color: #1a1a1a;
+            color: #00ff00;
+            font-family: monospace;
+            line-height: 1.6;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .battle-field {
+            border: 2px solid #00ff00;
+            padding: 15px;
+            margin-bottom: 20px;
+            background-color: #0a0a0a;
+        }
+        .status-line {
+            margin: 5px 0;
+            display: flex;
+            justify-content: space-between;
+        }
+        .hp-bar {
+            display: inline-block;
+            width: 200px;
+            height: 15px;
+            border: 1px solid #00ff00;
+            background-color: #001a00;
+            overflow: hidden;
+            margin: 5px 0;
+        }
+        .hp-fill {
+            height: 100%;
+            background-color: #00ff00;
+            transition: width 0.3s;
+        }
+        .hp-fill.danger {
+            background-color: #ff0000;
+        }
+        .enemy-section {
+            border: 1px dashed #00ff00;
+            padding: 10px;
+            margin-bottom: 15px;
+            background-color: #0a1a0a;
+        }
+        .actions {
+            border: 2px solid #00ff00;
+            padding: 15px;
+            margin-bottom: 20px;
+            background-color: #0a0a0a;
+        }
+        button {
+            background-color: #003300;
+            color: #00ff00;
+            border: 1px solid #00ff00;
+            padding: 10px 15px;
+            margin: 5px 5px 5px 0;
+            cursor: pointer;
+            font-family: monospace;
+            width: calc(50% - 5px);
+        }
+        button:hover {
+            background-color: #005500;
+        }
+        button:disabled {
+            background-color: #001100;
+            color: #006600;
+            cursor: not-allowed;
+        }
+        .message {
+            border: 1px solid #ffff00;
+            padding: 10px;
+            margin-bottom: 15px;
+            background-color: #1a1a00;
+            color: #ffff00;
+            white-space: pre-wrap;
+        }
+        .victory {
+            border: 1px solid #00ff00;
+            padding: 10px;
+            margin-bottom: 15px;
+            background-color: #001a00;
+            color: #00ff00;
+            white-space: pre-wrap;
+        }
+        .defeat {
+            border: 1px solid #ff0000;
+            padding: 10px;
+            margin-bottom: 15px;
+            background-color: #1a0000;
+            color: #ff0000;
+            white-space: pre-wrap;
+        }
+        .turn-info {
+            color: #ffff00;
+            text-align: center;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+        .item-option {
+            margin: 5px 0;
+            padding: 5px;
+            border: 1px solid #00ff00;
+        }
+        .item-option.empty {
+            color: #666666;
+            border-color: #666666;
+        }
+        .action-disabled {
+            opacity: 0.5;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="turn-info" id="turnInfo"></div>
+
+        <div class="battle-field">
+            <div style="text-align: center; margin-bottom: 15px;">
+                <strong>╔════════════════════╗</strong><br>
+                <strong>║   戰鬥開始！      ║</strong><br>
+                <strong>╚════════════════════╝</strong>
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <strong>【玩家狀態】</strong>
+                <div class="status-line">
+                    <span id="playerName"></span>
+                    <span id="playerLevel"></span>
+                </div>
+                <div class="status-line">
+                    <span>HP:</span>
+                    <span id="playerHpText"></span>
+                </div>
+                <div class="hp-bar">
+                    <div class="hp-fill" id="playerHpBar"></div>
+                </div>
+                <div class="status-line">
+                    <span>MP:</span>
+                    <span id="playerMpText"></span>
+                </div>
+            </div>
+
+            <div id="enemiesContainer"></div>
+        </div>
+
+        <div id="messageBox" style="display: none;"></div>
+
+        <div class="actions" id="actionButtons"></div>
+
+        <div style="margin-top: 20px;">
+            <button onclick="goToScene('town')" style="width: 100%;">返回村莊</button>
+        </div>
+    </div>
+
+    <script src="../game.js"></script>
+    <script src="../data.js"></script>
+    <script>
+        // 戰鬥狀態
+        let battleState = {
+            isActive: true,
+            enemies: [],
+            currentTurn: 0,
+            battleLog: []
+        };
+
+        // 初始化戰鬥
+        function initBattle(enemyIds) {
+            battleState.enemies = enemyIds.map(id => {
+                const enemy = ENEMIES[id];
+                return { ...enemy };
+            });
+            battleState.currentTurn = 1;
+            battleState.battleLog = [];
+
+            drawBattle();
+            addBattleLog(`戰鬥開始！敵人出現了！\n${battleState.enemies.map(e => `${e.name} (HP: ${e.hp})`).join(', ')}`);
+        }
+
+        // 繪製戰鬥畫面
+        function drawBattle() {
+            // 更新玩家狀態
+            document.getElementById('playerName').innerText = gameState.player.name;
+            document.getElementById('playerLevel').innerText = `Lv.${gameState.player.level}`;
+            document.getElementById('playerHpText').innerText = `${gameState.player.hp}/${gameState.player.maxHp}`;
+            document.getElementById('playerMpText').innerText = `${gameState.player.mp}/${gameState.player.maxMp}`;
+
+            const hpPercent = (gameState.player.hp / gameState.player.maxHp) * 100;
+            const hpBar = document.getElementById('playerHpBar');
+            hpBar.style.width = hpPercent + '%';
+            if (hpPercent < 30) {
+                hpBar.classList.add('danger');
+            } else {
+                hpBar.classList.remove('danger');
+            }
+
+            // 敵人狀態
+            const enemiesHtml = battleState.enemies.map((enemy, idx) => `
+<div class="enemy-section">
+    <div class="status-line">
+        <strong>${idx + 1}. ${enemy.name}</strong>
+        <span>Lv.${Math.floor(gameState.player.level * 0.8)}</span>
+    </div>
+    <div class="status-line">
+        <span>HP:</span>
+        <span>${enemy.hp}/${ENEMIES[enemy.id].hp}</span>
+    </div>
+    <div class="hp-bar">
+        <div class="hp-fill" style="width: ${(enemy.hp / ENEMIES[enemy.id].hp) * 100}%; background-color: #ff6666;"></div>
+    </div>
+</div>
+            `).join('');
+
+            document.getElementById('enemiesContainer').innerHTML = enemiesHtml;
+
+            // 更新轉數資訊
+            document.getElementById('turnInfo').innerText = `第 ${battleState.currentTurn} 回合`;
+
+            // 更新行動按鈕
+            drawActions();
+        }
+
+        // 繪製行動按鈕
+        function drawActions() {
+            if (!battleState.isActive) {
+                document.getElementById('actionButtons').innerHTML = '';
+                return;
+            }
+
+            const actionsHtml = `
+<div style="margin-bottom: 10px; font-weight: bold;">選擇你的行動：</div>
+<button onclick="playerAction('attack')">【攻擊】</button>
+<button onclick="showSkills()">【技能】</button>
+<button onclick="showItems()">【道具】</button>
+<button onclick="playerAction('defend')">【防禦】</button>
+<button onclick="playerAction('escape')" style="width: calc(50% - 5px);">【逃跑】</button>
+            `;
+
+            document.getElementById('actionButtons').innerHTML = actionsHtml;
+        }
+
+        // 玩家行動
+        function playerAction(action) {
+            if (!battleState.isActive) return;
+
+            document.getElementById('actionButtons').innerHTML = '';
+
+            let message = '';
+
+            switch(action) {
+                case 'attack':
+                    // 攻擊所有敵人（簡化版：攻擊第一個敵人）
+                    if (battleState.enemies.length > 0) {
+                        const enemy = battleState.enemies[0];
+                        const result = playerAttack(enemy);
+                        message = result.message;
+
+                        if (enemy.hp <= 0) {
+                            message += `\n\n${enemy.name}被擊敗了！`;
+                            battleState.enemies.splice(0, 1);
+                        }
+                    }
+                    break;
+
+                case 'defend':
+                    gameState.player.defense += 3;
+                    message = `${gameState.player.name}擺出防禦姿態！\n防禦+3 (這回合結束後恢復)`;
+                    break;
+
+                case 'escape':
+                    if (Math.random() > 0.5) {
+                        message = '成功逃脫了！';
+                        setTimeout(() => {
+                            goToScene('town');
+                        }, 1500);
+                        return;
+                    } else {
+                        message = '逃脫失敗！';
+                    }
+                    break;
+            }
+
+            addBattleLog(message);
+
+            // 檢查戰鬥結束
+            if (battleState.enemies.length === 0) {
+                endBattle(true);
+                return;
+            }
+
+            // 敵人回合
+            setTimeout(() => enemyTurn(), 1000);
+        }
+
+        // 敵人回合
+        function enemyTurn() {
+            let allActions = '';
+
+            for (let enemy of battleState.enemies) {
+                const result = enemyAttack(enemy);
+                allActions += result.message + '\n';
+            }
+
+            // 恢復防禦加成
+            if (gameState.equipped.armor) {
+                gameState.player.defense -= 3;
+            }
+
+            addBattleLog(allActions.trim());
+
+            // 檢查玩家是否存活
+            if (!isPlayerAlive()) {
+                endBattle(false);
+                return;
+            }
+
+            battleState.currentTurn += 1;
+            drawBattle();
+
+            setTimeout(() => {
+                drawActions();
+            }, 500);
+        }
+
+        // 顯示技能菜單
+        function showSkills() {
+            const skillsHtml = `
+<div style="margin-bottom: 10px; font-weight: bold;">選擇技能：</div>
+<button onclick="castSkill('slash')">【重斬】 MP消耗: 0</button>
+<button onclick="castSkill('fireball')">【火球術】 MP消耗: 15</button>
+<button onclick="castSkill('heal')">【治癒術】 MP消耗: 20</button>
+<button onclick="castSkill('backstab')">【背刺】 MP消耗: 10</button>
+<button onclick="drawActions()" style="width: calc(50% - 5px);">【返回】</button>
+            `;
+            document.getElementById('actionButtons').innerHTML = skillsHtml;
+        }
+
+        // 施放技能
+        function castSkill(skillName) {
+            if (!battleState.isActive) return;
+
+            const skillResult = useSkill(skillName);
+            if (!skillResult.success) {
+                addBattleLog(skillResult.message);
+                drawActions();
+                return;
+            }
+
+            document.getElementById('actionButtons').innerHTML = '';
+
+            const skill = skillResult.skill;
+            let message = `${gameState.player.name}使用了${skill.name}！`;
+
+            if (skillName === 'heal') {
+                const healAmount = 30;
+                restoreHealth(healAmount);
+                message += `\n恢復了${healAmount}點HP！`;
+            } else {
+                if (battleState.enemies.length > 0) {
+                    const enemy = battleState.enemies[0];
+                    const damage = calculateDamage(gameState.player, enemy);
+                    const finalDamage = Math.floor(damage * skill.multiplier);
+                    enemy.hp -= finalDamage;
+                    message += `\n造成${finalDamage}點傷害！`;
+
+                    if (enemy.hp <= 0) {
+                        message += `\n\n${enemy.name}被擊敗了！`;
+                        battleState.enemies.splice(0, 1);
+                    }
+                }
+            }
+
+            addBattleLog(message);
+            drawBattle();
+
+            if (battleState.enemies.length === 0) {
+                endBattle(true);
+                return;
+            }
+
+            setTimeout(() => enemyTurn(), 1000);
+        }
+
+        // 顯示物品菜單
+        function showItems() {
+            let itemsHtml = '<div style="margin-bottom: 10px; font-weight: bold;">選擇物品：</div>';
+
+            if (gameState.inventory.items.length === 0) {
+                itemsHtml += '<div class="item-option empty">背包內沒有物品</div>';
+            } else {
+                gameState.inventory.items.forEach((item, idx) => {
+                    itemsHtml += `<button onclick="useItemInBattle(${idx})" style="width: 100%;">【${item.name}】</button>`;
+                });
+            }
+
+            itemsHtml += '<button onclick="drawActions()" style="width: 100%;">【返回】</button>';
+
+            document.getElementById('actionButtons').innerHTML = itemsHtml;
+        }
+
+        // 在戰鬥中使用物品
+        function useItemInBattle(itemIndex) {
+            if (!battleState.isActive) return;
+
+            document.getElementById('actionButtons').innerHTML = '';
+
+            const itemResult = useItem(itemIndex);
+            if (!itemResult.success) {
+                addBattleLog(itemResult.message);
+                drawActions();
+                return;
+            }
+
+            addBattleLog(itemResult.message);
+            drawBattle();
+
+            if (battleState.enemies.length === 0) {
+                endBattle(true);
+                return;
+            }
+
+            setTimeout(() => enemyTurn(), 1000);
+        }
+
+        // 戰鬥結束
+        function endBattle(victory) {
+            battleState.isActive = false;
+
+            if (victory) {
+                let rewards = '【戰鬥勝利！】\n\n';
+                let totalExp = 0;
+                let totalGold = 0;
+
+                // 根據敵人類型計算獎勵
+                const params = new URLSearchParams(window.location.search);
+                const enemiesStr = params.get('enemies');
+                const enemyIds = enemiesStr.split(',');
+
+                enemyIds.forEach(enemyId => {
+                    const enemy = ENEMIES[enemyId];
+                    if (enemy) {
+                        totalExp += enemy.exp;
+                        totalGold += enemy.gold;
+
+                        // 記錄打敗的Boss
+                        if (enemyId === 'goblinKing' || enemyId === 'darkKnight' ||
+                            enemyId === 'demon' || enemyId === 'dragonWyvern' ||
+                            enemyId === 'evilGod') {
+                            if (!gameState.progress.defeatedBosses.includes(enemyId)) {
+                                gameState.progress.defeatedBosses.push(enemyId);
+                            }
+                        }
+                    }
+                });
+
+                gainExp(totalExp);
+                addGold(totalGold);
+
+                rewards += `獲得${totalExp}經驗值！\n`;
+                rewards += `獲得${totalGold}金幣！\n`;
+
+                // 隨機掉落物品
+                if (Math.random() > 0.6) {
+                    const lootTable = [
+                        { id: 'potion', name: '紅色藥水', type: 'potion' },
+                        { id: 'mpPotion', name: '藍色藥水', type: 'mpPotion' }
+                    ];
+                    const loot = lootTable[Math.floor(Math.random() * lootTable.length)];
+                    addItem(loot);
+                    rewards += `獲得${loot.name}！\n`;
+                }
+
+                // 檢查是否打敗最終Boss
+                if (enemyIds.includes('evilGod')) {
+                    rewards += '\n\n【最終Boss擊敗！】\n世界被拯救了！\n\n3秒後返回勝利畫面...';
+                    setTimeout(() => {
+                        saveGame();
+                        window.location.href = 'victory.html';
+                    }, 3000);
+                } else {
+                    rewards += '\n\n按返回村莊繼續冒險...';
+                }
+
+                const victoryDiv = document.createElement('div');
+                victoryDiv.className = 'victory';
+                victoryDiv.innerText = rewards;
+                document.getElementById('messageBox').appendChild(victoryDiv);
+            } else {
+                const defeatDiv = document.createElement('div');
+                defeatDiv.className = 'defeat';
+                defeatDiv.innerText = '【戰鬥失敗！】\n\n你被擊敗了...\n\n按返回村莊回到安全之地';
+                document.getElementById('messageBox').appendChild(defeatDiv);
+                gameState.player.hp = gameState.player.maxHp;
+            }
+
+            document.getElementById('messageBox').style.display = 'block';
+            document.getElementById('actionButtons').innerHTML = '';
+            saveGame();
+        }
+
+        // 添加戰鬥日誌
+        function addBattleLog(message) {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = 'message';
+            msgDiv.innerText = message;
+            document.getElementById('messageBox').insertBefore(msgDiv, document.getElementById('messageBox').firstChild);
+            document.getElementById('messageBox').style.display = 'block';
+        }
+
+        // 計算傷害（複製自game.js）
+        function calculateDamage(attacker, defender) {
+            const baseDamage = attacker.attack;
+            const variance = Math.floor(Math.random() * 5) - 2;
+            const defenseReduction = Math.floor(defender.defense / 2);
+            const finalDamage = Math.max(1, baseDamage + variance - defenseReduction);
+            return finalDamage;
+        }
+
+        // 從URL參數獲取敵人
+        function getEnemiesFromUrl() {
+            const params = new URLSearchParams(window.location.search);
+            const enemiesStr = params.get('enemies');
+            if (enemiesStr) {
+                return enemiesStr.split(',');
+            }
+            return ['goblin']; // 默認敵人
+        }
+
+        // 頁面加載
+        window.addEventListener('load', function() {
+            initGame();
+            const enemies = getEnemiesFromUrl();
+            initBattle(enemies);
+        });
+    </script>
+</body>
+</html>

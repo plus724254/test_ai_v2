@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>神秘商人小屋 - 復古RPG</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background-color: #1a1a1a;
+            color: #00ff00;
+            font-family: monospace;
+            line-height: 1.6;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .content {
+            border: 2px solid #00ff00;
+            padding: 20px;
+            margin-bottom: 20px;
+            background-color: #0a0a0a;
+            white-space: pre-wrap;
+        }
+        button {
+            background-color: #003300;
+            color: #00ff00;
+            border: 1px solid #00ff00;
+            padding: 10px 15px;
+            margin: 5px 5px 5px 0;
+            cursor: pointer;
+            font-family: monospace;
+            display: block;
+            width: 100%;
+            margin-bottom: 5px;
+        }
+        button:hover {
+            background-color: #005500;
+        }
+        button:disabled {
+            background-color: #001100;
+            color: #666666;
+            cursor: not-allowed;
+        }
+        .stats {
+            border: 1px dashed #00ff00;
+            padding: 10px;
+            margin-bottom: 15px;
+            background-color: #0a1a0a;
+            white-space: pre;
+            font-size: 12px;
+        }
+        .message {
+            border: 1px solid #ffff00;
+            padding: 10px;
+            margin-bottom: 15px;
+            background-color: #1a1a00;
+            color: #ffff00;
+        }
+        .rare-item {
+            border: 1px solid #ff00ff;
+            padding: 10px;
+            margin-bottom: 10px;
+            background-color: #1a001a;
+            color: #ff00ff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="stats" id="playerStats"></div>
+
+        <div class="content" id="sceneText">
+╔════════════════════════╗
+║   神秘商人小屋        ║
+╚════════════════════════╝
+
+一棟隱藏在森林深處的小木屋。
+
+走進去後，你看到一位神秘的老人正坐在火爐邊。
+他用深邃的眼光看著你，彷彿他一直在等你的到來。
+
+「歡迎，年輕的冒險家...」
+「我有一些...特殊的商品...」
+
+【特殊商品】
+        </div>
+
+        <div id="itemsSection"></div>
+
+        <button onclick="goToScene('town')" style="margin-top: 20px;">離開</button>
+    </div>
+
+    <script src="../game.js"></script>
+    <script src="../data.js"></script>
+    <script>
+        const rareItems = [
+            { id: 'demonBlade', name: '惡魔刀', attack: 25, price: 2000, rarity: '傳奇' },
+            { id: 'mithrilArmor', name: '秘銀甲', defense: 14, price: 1500, rarity: '稀有' },
+            { id: 'holyWand', name: '聖光杖', attack: 12, price: 900, rarity: '稀有' }
+        ];
+
+        function renderScene() {
+            document.getElementById('playerStats').innerText = displayPlayerStats();
+
+            let html = '';
+            rareItems.forEach(item => {
+                const canAfford = gameState.player.gold >= item.price;
+                let itemType = '';
+                let stat = '';
+                if (item.attack) {
+                    itemType = '武器';
+                    stat = `攻擊+${item.attack}`;
+                } else {
+                    itemType = '防具';
+                    stat = `防禦+${item.defense}`;
+                }
+
+                html += `<div class="rare-item">
+<strong>[${item.rarity}] ${item.name}</strong>
+<div>${itemType} | ${stat}</div>
+<div style="margin-top: 5px;">價格: ${item.price}G</div>
+<button onclick="buyRareItem('${item.id}', ${item.price})" ${!canAfford ? 'disabled' : ''} style="margin-top: 8px;">購買</button>
+</div>`;
+            });
+
+            document.getElementById('itemsSection').innerHTML = html;
+        }
+
+        function buyRareItem(itemId, price) {
+            if (gameState.player.gold < price) {
+                alert('金幣不足！');
+                return;
+            }
+
+            const item = rareItems.find(i => i.id === itemId);
+            if (!item) return;
+
+            gameState.player.gold -= price;
+
+            if (item.attack) {
+                gameState.inventory.weapons.push({ id: item.id, name: item.name, attack: item.attack });
+            } else {
+                gameState.inventory.armor.push({ id: item.id, name: item.name, defense: item.defense });
+            }
+
+            alert(`購買了 ${item.name}！\n剩餘金幣: ${gameState.player.gold}G`);
+            saveGame();
+            renderScene();
+        }
+
+        window.addEventListener('load', function() {
+            initGame();
+            renderScene();
+        });
+    </script>
+</body>
+</html>

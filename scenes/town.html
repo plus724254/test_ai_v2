@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>新手村 - 復古RPG</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background-color: #1a1a1a;
+            color: #00ff00;
+            font-family: monospace;
+            line-height: 1.6;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .content {
+            border: 2px solid #00ff00;
+            padding: 20px;
+            margin-bottom: 20px;
+            background-color: #0a0a0a;
+            white-space: pre-wrap;
+        }
+        button {
+            background-color: #003300;
+            color: #00ff00;
+            border: 1px solid #00ff00;
+            padding: 10px 15px;
+            margin: 5px 5px 5px 0;
+            cursor: pointer;
+            font-family: monospace;
+            display: block;
+            width: 100%;
+            margin-bottom: 5px;
+        }
+        button:hover {
+            background-color: #005500;
+        }
+        .stats {
+            border: 1px dashed #00ff00;
+            padding: 10px;
+            margin-bottom: 15px;
+            background-color: #0a1a0a;
+            white-space: pre;
+            font-size: 12px;
+        }
+        .section {
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="stats" id="playerStats"></div>
+
+        <div class="content" id="sceneText"></div>
+
+        <div class="section" id="actions"></div>
+
+        <button onclick="saveGameManual()" style="background-color: #1a0a00; border-color: #ffff00; color: #ffff00;">【手動儲存】</button>
+    </div>
+
+    <script src="../game.js"></script>
+    <script src="../data.js"></script>
+    <script>
+        function renderScene() {
+            const scene = SCENES.town;
+
+            // 顯示玩家狀態
+            document.getElementById('playerStats').innerText = displayPlayerStats();
+
+            // 顯示場景描述
+            document.getElementById('sceneText').innerText = scene.description;
+
+            // 顯示選項
+            let buttonsHtml = '';
+            const exits = [
+                { name: '進入旅館', target: 'inn' },
+                { name: '進入商店', target: 'shop' },
+                { name: '進入公會', target: 'guild' },
+                { name: '前往綠林', target: 'forest1' },
+                { name: '查看狀態', target: 'status' }
+            ];
+
+            exits.forEach(exit => {
+                if (exit.target) {
+                    buttonsHtml += `<button onclick="goToScene('${exit.target}')">${exit.name}</button>`;
+                }
+            });
+
+            document.getElementById('actions').innerHTML = buttonsHtml;
+        }
+
+        function saveGameManual() {
+            saveGame();
+            alert('遊戲已儲存！');
+        }
+
+        window.addEventListener('load', function() {
+            initGame();
+            renderScene();
+        });
+    </script>
+</body>
+</html>

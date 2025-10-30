@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>冒險者公會 - 復古RPG</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background-color: #1a1a1a;
+            color: #00ff00;
+            font-family: monospace;
+            line-height: 1.6;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .content {
+            border: 2px solid #00ff00;
+            padding: 20px;
+            margin-bottom: 20px;
+            background-color: #0a0a0a;
+            white-space: pre-wrap;
+        }
+        button {
+            background-color: #003300;
+            color: #00ff00;
+            border: 1px solid #00ff00;
+            padding: 10px 15px;
+            margin: 5px 5px 5px 0;
+            cursor: pointer;
+            font-family: monospace;
+            display: block;
+            width: 100%;
+            margin-bottom: 5px;
+        }
+        button:hover {
+            background-color: #005500;
+        }
+        .stats {
+            border: 1px dashed #00ff00;
+            padding: 10px;
+            margin-bottom: 15px;
+            background-color: #0a1a0a;
+            white-space: pre;
+            font-size: 12px;
+        }
+        .message {
+            border: 1px solid #ffff00;
+            padding: 10px;
+            margin-bottom: 15px;
+            background-color: #1a1a00;
+            color: #ffff00;
+        }
+        .quest-item {
+            border: 1px solid #00ff00;
+            padding: 10px;
+            margin-bottom: 10px;
+            background-color: #0a1a0a;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="stats" id="playerStats"></div>
+
+        <div class="content" id="sceneText"></div>
+
+        <div id="questsSection"></div>
+
+        <div id="message" style="display: none;"></div>
+
+        <button onclick="goToScene('town')" style="margin-top: 20px;">返回村莊</button>
+    </div>
+
+    <script src="../game.js"></script>
+    <script src="../data.js"></script>
+    <script>
+        const quests = [
+            {
+                id: 'quest_goblins',
+                name: '清除哥布林',
+                description: '村莊周邊的哥布林越來越多，請幫我們清除它們！',
+                reward: 200,
+                exp: 150,
+                enemies: ['goblin', 'goblin'],
+                sceneTarget: 'forest1'
+            },
+            {
+                id: 'quest_wolves',
+                name: '狼群圍攻',
+                description: '森林深處有一群狼在威脅旅客，我們需要有人去解決它們。',
+                reward: 250,
+                exp: 200,
+                enemies: ['wolf', 'wolf', 'wolf'],
+                sceneTarget: 'forest2'
+            },
+            {
+                id: 'quest_spiders',
+                name: '巨蜘蛛的威脅',
+                description: '黑暗森林出現了巨大的蜘蛛，村民們都很害怕。',
+                reward: 300,
+                exp: 250,
+                enemies: ['spider', 'spider'],
+                sceneTarget: 'darkForest1',
+                minLevel: 5
+            }
+        ];
+
+        function renderScene() {
+            const scene = SCENES.guild;
+            document.getElementById('playerStats').innerText = displayPlayerStats();
+            document.getElementById('sceneText').innerText = scene.description;
+
+            // 顯示任務列表
+            let questsHtml = '';
+            quests.forEach(quest => {
+                const isCompleted = gameState.progress.completedQuests.includes(quest.id);
+                const isAvailable = !quest.minLevel || gameState.player.level >= quest.minLevel;
+
+                questsHtml += `<div class="quest-item">
+<strong>[${isCompleted ? '已完成' : '進行中'}] ${quest.name}</strong>
+<div>${quest.description}</div>
+<div style="color: #ffff00; margin-top: 5px;">
+報酬: ${quest.reward}G + ${quest.exp}Exp
+</div>`;
+
+                if (!isCompleted) {
+                    if (isAvailable) {
+                        questsHtml += `<button onclick="startQuest('${quest.id}')" style="margin-top: 8px;">接受任務</button>`;
+                    } else {
+                        questsHtml += `<div style="color: #666666; margin-top: 8px;">需要等級 ${quest.minLevel}</div>`;
+                    }
+                } else {
+                    questsHtml += `<div style="color: #00ff00; margin-top: 8px;">✓ 已完成</div>`;
+                }
+
+                questsHtml += '</div>';
+            });
+
+            document.getElementById('questsSection').innerHTML = questsHtml;
+        }
+
+        function startQuest(questId) {
+            const quest = quests.find(q => q.id === questId);
+            if (!quest) return;
+
+            if (gameState.progress.completedQuests.includes(questId)) {
+                showMessage('這個任務已經完成了！');
+                return;
+            }
+
+            const enemiesStr = quest.enemies.join(',');
+            const url = `battle.html?enemies=${enemiesStr}`;
+
+            // 保存當前任務
+            sessionStorage.setItem('currentQuest', JSON.stringify(quest));
+            saveGame();
+
+            // 跳轉到戰鬥
+            window.location.href = url;
+        }
+
+        function showMessage(text) {
+            const msgDiv = document.getElementById('message');
+            msgDiv.innerText = text;
+            msgDiv.style.display = 'block';
+        }
+
+        window.addEventListener('load', function() {
+            initGame();
+            renderScene();
+
+            // 檢查是否完成了任務
+            const completedQuest = sessionStorage.getItem('questCompleted');
+            if (completedQuest) {
+                const quest = JSON.parse(completedQuest);
+                gameState.progress.completedQuests.push(quest.id);
+                gameState.player.gold += quest.reward;
+                gainExp(quest.exp);
+                saveGame();
+
+                showMessage(`任務完成！\n\n獲得 ${quest.reward}G\n獲得 ${quest.exp}Exp`);
+                sessionStorage.removeItem('questCompleted');
+
+                setTimeout(() => {
+                    renderScene();
+                }, 2000);
+            }
+        });
+    </script>
+</body>
+</html>

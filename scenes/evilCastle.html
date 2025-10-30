@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>魔王城 - 復古RPG</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background-color: #1a1a1a;
+            color: #ff0000;
+            font-family: monospace;
+            line-height: 1.6;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .content {
+            border: 2px solid #ff0000;
+            padding: 20px;
+            margin-bottom: 20px;
+            background-color: #0a0000;
+            white-space: pre-wrap;
+        }
+        button {
+            background-color: #660000;
+            color: #ff0000;
+            border: 1px solid #ff0000;
+            padding: 10px 15px;
+            margin: 5px 5px 5px 0;
+            cursor: pointer;
+            font-family: monospace;
+            display: block;
+            width: 100%;
+            margin-bottom: 5px;
+        }
+        button:hover {
+            background-color: #990000;
+        }
+        .stats {
+            border: 1px dashed #ff0000;
+            padding: 10px;
+            margin-bottom: 15px;
+            background-color: #1a0000;
+            white-space: pre;
+            font-size: 12px;
+        }
+        .danger {
+            border: 2px solid #ffff00;
+            padding: 10px;
+            margin-bottom: 15px;
+            background-color: #1a1a00;
+            color: #ffff00;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="danger">
+╔═══════════════════════════════════╗
+║  最終決戰！                       ║
+║  這是故事的結局...                ║
+║  準備好了嗎？                     ║
+╚═══════════════════════════════════╝
+        </div>
+
+        <div class="stats" id="playerStats"></div>
+
+        <div class="content" id="sceneText">
+╔════════════════════════════════╗
+║      邪惡之神的魔王城          ║
+╚════════════════════════════════╝
+
+天空被黑雲籠罩，整個世界陷入了黑暗。
+
+一座巨大的黑色城堡聳立在雲端，
+散發著令人恐怖的邪惡氣息。
+
+城堡的頂端，一個龐大的身影在蠕動——
+那就是統治整個魔幻大陸的邪惡之神。
+
+你的冒險，即將在這裡終結。
+
+無論勝負如何，你都不會後悔。
+因為你選擇挺身而出，對抗黑暗。
+
+【最終BOSS】
+邪惡之神 - 血量150、攻擊25、防禦15
+
+【故事】
+「哼！又有一隻蒼蠅來送死嗎？」
+「讓我看看，你這位傳說中的『光芒之子』有什麼本事...」
+        </div>
+
+        <div id="actions"></div>
+
+        <button onclick="goToScene('town')" style="margin-top: 20px;">放棄並返回</button>
+    </div>
+
+    <script src="../game.js"></script>
+    <script src="../data.js"></script>
+    <script>
+        function renderScene() {
+            document.getElementById('playerStats').innerText = displayPlayerStats();
+
+            let buttonsHtml = `
+<button onclick="startBossBattle()" style="background-color: #cc0000; border-color: #ffff00; color: #ffff00;">【與邪惡之神決戰】</button>
+            `;
+
+            document.getElementById('actions').innerHTML = buttonsHtml;
+        }
+
+        function startBossBattle() {
+            // 檢查等級 (降低等級要求便於測試)
+            if (gameState.player.level < 5) {
+                alert('你的等級還不夠高...你需要更多的修煉');
+                return;
+            }
+
+            saveGame();
+            window.location.href = 'battle.html?enemies=evilGod';
+        }
+
+        window.addEventListener('load', function() {
+            initGame();
+            renderScene();
+        });
+    </script>
+</body>
+</html>

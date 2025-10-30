@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>勝利！ - 復古RPG</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background-color: #1a1a1a;
+            color: #00ff00;
+            font-family: monospace;
+            line-height: 1.6;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .victory {
+            border: 2px solid #00ff00;
+            padding: 20px;
+            margin-bottom: 20px;
+            background-color: #0a0a0a;
+            white-space: pre-wrap;
+            text-align: center;
+        }
+        button {
+            background-color: #003300;
+            color: #00ff00;
+            border: 1px solid #00ff00;
+            padding: 10px 15px;
+            margin: 5px 5px 5px 0;
+            cursor: pointer;
+            font-family: monospace;
+            display: block;
+            width: 100%;
+            margin-bottom: 5px;
+        }
+        button:hover {
+            background-color: #005500;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="victory">
+╔═════════════════════════════════════╗
+║                                   ║
+║           恭 喜 ！               ║
+║                                   ║
+║        你 打 敗 了 邪 惡 之 神     ║
+║                                   ║
+║        黑 暗 被 驅 散 了 ！       ║
+║                                   ║
+╚═════════════════════════════════════╝
+
+【故事結局】
+
+當最後一擊打中邪惡之神時，
+整個世界為之一震。
+
+黑雲消散，陽光重新照亮大地。
+
+邪惡之神發出了最後的尖叫聲，
+他的身體開始破裂、消融...
+
+「不...不可能...我是不可戰勝的...」
+
+他的聲音漸漸消散，
+帶著千年的怨念消失在風中。
+
+黑暗終於被擊敗了。
+
+【遊戲完成！】
+感謝你的冒險！
+
+你的冒險雖然結束了，
+但這個魔幻世界的故事還要繼續...
+
+下次再見！
+        </div>
+
+        <button onclick="newGame()">【新遊戲】</button>
+        <button onclick="toMenu()">【返回菜單】</button>
+    </div>
+
+    <script>
+        function newGame() {
+            localStorage.removeItem('textGameSave');
+            window.location.href = '../index.html';
+        }
+
+        function toMenu() {
+            window.location.href = '../index.html';
+        }
+    </script>
+</body>
+</html>

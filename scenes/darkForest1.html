@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>黑暗森林第一區 - 復古RPG</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background-color: #1a1a1a;
+            color: #00ff00;
+            font-family: monospace;
+            line-height: 1.6;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .content {
+            border: 2px solid #00ff00;
+            padding: 20px;
+            margin-bottom: 20px;
+            background-color: #0a0a0a;
+            white-space: pre-wrap;
+        }
+        button {
+            background-color: #003300;
+            color: #00ff00;
+            border: 1px solid #00ff00;
+            padding: 10px 15px;
+            margin: 5px 5px 5px 0;
+            cursor: pointer;
+            font-family: monospace;
+            display: block;
+            width: 100%;
+            margin-bottom: 5px;
+        }
+        button:hover {
+            background-color: #005500;
+        }
+        .stats {
+            border: 1px dashed #00ff00;
+            padding: 10px;
+            margin-bottom: 15px;
+            background-color: #0a1a0a;
+            white-space: pre;
+            font-size: 12px;
+        }
+        .warning {
+            border: 1px solid #ff6666;
+            padding: 10px;
+            margin-bottom: 15px;
+            background-color: #1a0a0a;
+            color: #ff6666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="warning">⚠️ 警告：黑暗森林內危險物眾多，請確保你已經做好準備！</div>
+
+        <div class="stats" id="playerStats"></div>
+
+        <div class="content" id="sceneText"></div>
+
+        <div id="actions"></div>
+
+        <button onclick="goToScene('town')" style="margin-top: 20px;">返回村莊</button>
+    </div>
+
+    <script src="../game.js"></script>
+    <script src="../data.js"></script>
+    <script>
+        function renderScene() {
+            const scene = SCENES.darkForest1;
+            document.getElementById('playerStats').innerText = displayPlayerStats();
+            document.getElementById('sceneText').innerText = scene.description;
+
+            let buttonsHtml = '';
+            scene.exits.forEach(exit => {
+                if (exit.action === 'battle') {
+                    const enemiesStr = exit.enemies.join(',');
+                    buttonsHtml += `<button onclick="startBattle('${enemiesStr}')">${exit.name}</button>`;
+                } else if (exit.target) {
+                    buttonsHtml += `<button onclick="goToScene('${exit.target}')">${exit.name}</button>`;
+                }
+            });
+
+            document.getElementById('actions').innerHTML = buttonsHtml;
+        }
+
+        function startBattle(enemiesStr) {
+            saveGame();
+            window.location.href = `battle.html?enemies=${enemiesStr}`;
+        }
+
+        window.addEventListener('load', function() {
+            initGame();
+            renderScene();
+        });
+    </script>
+</body>
+</html>

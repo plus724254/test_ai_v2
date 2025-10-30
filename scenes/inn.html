@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>旅館 - 復古RPG</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background-color: #1a1a1a;
+            color: #00ff00;
+            font-family: monospace;
+            line-height: 1.6;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .content {
+            border: 2px solid #00ff00;
+            padding: 20px;
+            margin-bottom: 20px;
+            background-color: #0a0a0a;
+            white-space: pre-wrap;
+        }
+        button {
+            background-color: #003300;
+            color: #00ff00;
+            border: 1px solid #00ff00;
+            padding: 10px 15px;
+            margin: 5px 5px 5px 0;
+            cursor: pointer;
+            font-family: monospace;
+            display: block;
+            width: 100%;
+            margin-bottom: 5px;
+        }
+        button:hover {
+            background-color: #005500;
+        }
+        button:disabled {
+            background-color: #001100;
+            color: #666666;
+            cursor: not-allowed;
+        }
+        .stats {
+            border: 1px dashed #00ff00;
+            padding: 10px;
+            margin-bottom: 15px;
+            background-color: #0a1a0a;
+            white-space: pre;
+            font-size: 12px;
+        }
+        .message {
+            border: 1px solid #ffff00;
+            padding: 10px;
+            margin-bottom: 15px;
+            background-color: #1a1a00;
+            color: #ffff00;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="stats" id="playerStats"></div>
+
+        <div class="content" id="sceneText"></div>
+
+        <div id="message" style="display: none;"></div>
+
+        <div id="actions"></div>
+
+        <button onclick="goToScene('town')" style="margin-top: 20px;">返回村莊</button>
+    </div>
+
+    <script src="../game.js"></script>
+    <script src="../data.js"></script>
+    <script>
+        function renderScene() {
+            const scene = SCENES.inn;
+
+            // 顯示玩家狀態
+            document.getElementById('playerStats').innerText = displayPlayerStats();
+
+            // 顯示場景描述
+            document.getElementById('sceneText').innerText = scene.description;
+
+            // 顯示選項
+            let buttonsHtml = '';
+            scene.exits.forEach(exit => {
+                if (exit.action === 'rest') {
+                    const canAfford = gameState.player.gold >= exit.cost;
+                    buttonsHtml += `<button onclick="rest(${exit.cost})" ${!canAfford ? 'disabled' : ''}>${exit.name} | 金幣: ${gameState.player.gold}/${exit.cost}</button>`;
+                } else if (exit.action === 'meal') {
+                    const canAfford = gameState.player.gold >= exit.cost;
+                    buttonsHtml += `<button onclick="eatMeal(${exit.cost})" ${!canAfford ? 'disabled' : ''}>${exit.name} | 金幣: ${gameState.player.gold}/${exit.cost}</button>`;
+                } else if (exit.target) {
+                    buttonsHtml += `<button onclick="goToScene('${exit.target}')">${exit.name}</button>`;
+                }
+            });
+
+            document.getElementById('actions').innerHTML = buttonsHtml;
+        }
+
+        function rest(cost) {
+            if (gameState.player.gold < cost) {
+                showMessage('金幣不足！');
+                return;
+            }
+
+            gameState.player.gold -= cost;
+            gameState.player.hp = gameState.player.maxHp;
+            gameState.player.mp = gameState.player.maxMp;
+
+            showMessage(`╔════════════════════╗
+║   舒服的睡眠...    ║
+╚════════════════════╝
+
+你在柔軟的床上睡了一夜。
+
+早上醒來時，感到精力充沛！
+
+【效果】
+> 完全恢復HP和MP
+> 花費 ${cost}G`);
+
+            saveGame();
+            setTimeout(() => {
+                renderScene();
+            }, 2000);
+        }
+
+        function eatMeal(cost) {
+            if (gameState.player.gold < cost) {
+                showMessage('金幣不足！');
+                return;
+            }
+
+            gameState.player.gold -= cost;
+            const healAmount = 50;
+            gameState.player.hp = Math.min(gameState.player.maxHp, gameState.player.hp + healAmount);
+
+            showMessage(`╔════════════════════╗
+║   享受美味料理    ║
+╚════════════════════╝
+
+老闆娘端上了熱騰騰的飯菜。
+
+香氣撲鼻而來...
+
+【效果】
+> 恢復 ${healAmount}HP
+> 花費 ${cost}G`);
+
+            saveGame();
+            setTimeout(() => {
+                renderScene();
+            }, 2000);
+        }
+
+        function showMessage(text) {
+            const msgDiv = document.getElementById('message');
+            msgDiv.innerText = text;
+            msgDiv.style.display = 'block';
+            document.getElementById('actions').style.display = 'none';
+        }
+
+        window.addEventListener('load', function() {
+            initGame();
+            renderScene();
+        });
+    </script>
+</body>
+</html>

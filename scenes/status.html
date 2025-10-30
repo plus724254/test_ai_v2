@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>角色狀態 - 復古RPG</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background-color: #1a1a1a;
+            color: #00ff00;
+            font-family: monospace;
+            line-height: 1.6;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .content {
+            border: 2px solid #00ff00;
+            padding: 20px;
+            margin-bottom: 20px;
+            background-color: #0a0a0a;
+            white-space: pre-wrap;
+        }
+        button {
+            background-color: #003300;
+            color: #00ff00;
+            border: 1px solid #00ff00;
+            padding: 10px 15px;
+            margin: 5px 5px 5px 0;
+            cursor: pointer;
+            font-family: monospace;
+            display: block;
+            width: 100%;
+            margin-bottom: 5px;
+        }
+        button:hover {
+            background-color: #005500;
+        }
+        .tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 15px;
+        }
+        .tab-button {
+            flex: 1;
+            padding: 8px;
+            background-color: #003300;
+            color: #00ff00;
+            border: 1px solid #00ff00;
+            cursor: pointer;
+            font-family: monospace;
+        }
+        .tab-button.active {
+            background-color: #006600;
+        }
+        .tab-button:hover {
+            background-color: #005500;
+        }
+        .stat-line {
+            padding: 5px 0;
+            border-bottom: 1px dotted #00ff00;
+            display: flex;
+            justify-content: space-between;
+        }
+        .stat-line:last-child {
+            border-bottom: none;
+        }
+        .item-slot {
+            border: 1px solid #00ff00;
+            padding: 10px;
+            margin-bottom: 10px;
+            background-color: #0a1a0a;
+        }
+        .hp-bar {
+            display: inline-block;
+            width: 150px;
+            height: 12px;
+            border: 1px solid #00ff00;
+            background-color: #001a00;
+            overflow: hidden;
+            margin: 2px 5px 2px 0;
+        }
+        .hp-fill {
+            height: 100%;
+            background-color: #00ff00;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div style="text-align: center; margin-bottom: 20px;">
+            <strong>╔═══════════════════════╗</strong><br>
+            <strong>║  角色詳細資訊         ║</strong><br>
+            <strong>╚═══════════════════════╝</strong>
+        </div>
+
+        <div class="tabs">
+            <button class="tab-button active" onclick="switchTab('stats')">【屬性】</button>
+            <button class="tab-button" onclick="switchTab('equipment')">【裝備】</button>
+            <button class="tab-button" onclick="switchTab('inventory')">【背包】</button>
+        </div>
+
+        <div id="content" class="content"></div>
+
+        <button onclick="goToScene('town')" style="margin-top: 20px;">返回村莊</button>
+    </div>
+
+    <script src="../game.js"></script>
+    <script src="../data.js"></script>
+    <script>
+        function switchTab(tab) {
+            // 更新按鈕樣式
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            let html = '';
+
+            if (tab === 'stats') {
+                html = `
+【基本信息】
+名稱: ${gameState.player.name}
+職業: ${getClassName()}
+等級: ${gameState.player.level}
+
+【生命值】
+HP: ${gameState.player.hp}/${gameState.player.maxHp}
+${getHpBar()}
+
+【魔力值】
+MP: ${gameState.player.mp}/${gameState.player.maxMp}
+${getMpBar()}
+
+【屬性統計】
+攻擊力: ${gameState.player.attack}
+防禦力: ${gameState.player.defense}
+速度: ${gameState.player.speed}
+金幣: ${gameState.player.gold}G
+
+【經驗值】
+經驗: ${gameState.player.exp}/${gameState.player.expToLevel}
+${getExpBar()}
+                `;
+            } else if (tab === 'equipment') {
+                html = '<h3 style="margin-bottom: 15px; color: #ffff00;">【裝備欄位】</h3>';
+
+                // 武器
+                html += '<div class="item-slot">';
+                html += '<strong>武器</strong>';
+                if (gameState.equipped.weapon) {
+                    html += `\n${gameState.equipped.weapon.name}
+攻擊+${gameState.equipped.weapon.attack}`;
+                    html += `\n<button onclick="unequipWeapon()" style="margin-top: 8px;">卸下</button>`;
+                } else {
+                    html += '\n【未裝備】';
+                }
+                html += '</div>';
+
+                // 防具
+                html += '<div class="item-slot">';
+                html += '<strong>防具</strong>';
+                if (gameState.equipped.armor) {
+                    html += `\n${gameState.equipped.armor.name}
+防禦+${gameState.equipped.armor.defense}`;
+                    html += `\n<button onclick="unequipArmor()" style="margin-top: 8px;">卸下</button>`;
+                } else {
+                    html += '\n【未裝備】';
+                }
+                html += '</div>';
+
+                // 可用武器
+                html += '<h4 style="margin-top: 20px; margin-bottom: 10px; color: #ffff00;">【背包中的武器】</h4>';
+                if (gameState.inventory.weapons.length === 0) {
+                    html += '<div style="color: #666666;">沒有其他武器</div>';
+                } else {
+                    gameState.inventory.weapons.forEach((weapon, idx) => {
+                        html += `<button onclick="equipWeaponFromInventory(${idx})" style="text-align: left;">${weapon.name} (+${weapon.attack} 攻擊)</button>`;
+                    });
+                }
+
+                // 可用防具
+                html += '<h4 style="margin-top: 20px; margin-bottom: 10px; color: #ffff00;">【背包中的防具】</h4>';
+                if (gameState.inventory.armor.length === 0) {
+                    html += '<div style="color: #666666;">沒有其他防具</div>';
+                } else {
+                    gameState.inventory.armor.forEach((armor, idx) => {
+                        html += `<button onclick="equipArmorFromInventory(${idx})" style="text-align: left;">${armor.name} (+${armor.defense} 防禦)</button>`;
+                    });
+                }
+            } else if (tab === 'inventory') {
+                html = '<h3 style="margin-bottom: 15px; color: #ffff00;">【背包物品】(容量: ' + gameState.inventory.items.length + ')</h3>';
+
+                if (gameState.inventory.items.length === 0) {
+                    html += '<div style="color: #666666;">背包是空的</div>';
+                } else {
+                    gameState.inventory.items.forEach((item, idx) => {
+                        html += `<div style="padding: 8px; border: 1px solid #00ff00; margin-bottom: 5px; background-color: #0a1a0a;">
+${item.name}
+<button onclick="useItem(${idx})" style="margin-top: 5px;">使用</button>
+</div>`;
+                    });
+                }
+            }
+
+            document.getElementById('content').innerText = html;
+        }
+
+        function getClassName() {
+            const names = {
+                warrior: '戰士',
+                mage: '法師',
+                rogue: '盜賊',
+                paladin: '聖騎'
+            };
+            return names['warrior'] || '冒險家'; // 簡化版
+        }
+
+        function getHpBar() {
+            const percent = (gameState.player.hp / gameState.player.maxHp) * 100;
+            const filled = Math.floor(percent / 10);
+            const empty = 10 - filled;
+            return '|' + '█'.repeat(filled) + '░'.repeat(empty) + '|';
+        }
+
+        function getMpBar() {
+            const percent = (gameState.player.mp / gameState.player.maxMp) * 100;
+            const filled = Math.floor(percent / 10);
+            const empty = 10 - filled;
+            return '|' + '█'.repeat(filled) + '░'.repeat(empty) + '|';
+        }
+
+        function getExpBar() {
+            const percent = (gameState.player.exp / gameState.player.expToLevel) * 100;
+            const filled = Math.floor(percent / 10);
+            const empty = 10 - filled;
+            return '|' + '█'.repeat(filled) + '░'.repeat(empty) + '|';
+        }
+
+        function unequipWeapon() {
+            if (gameState.equipped.weapon) {
+                gameState.inventory.weapons.push(gameState.equipped.weapon);
+                gameState.player.attack -= gameState.equipped.weapon.attack;
+                gameState.equipped.weapon = null;
+                saveGame();
+                switchTab('equipment');
+            }
+        }
+
+        function unequipArmor() {
+            if (gameState.equipped.armor) {
+                gameState.inventory.armor.push(gameState.equipped.armor);
+                gameState.player.defense -= gameState.equipped.armor.defense;
+                gameState.equipped.armor = null;
+                saveGame();
+                switchTab('equipment');
+            }
+        }
+
+        function equipWeaponFromInventory(idx) {
+            const weapon = gameState.inventory.weapons[idx];
+            if (gameState.equipped.weapon) {
+                gameState.inventory.weapons.push(gameState.equipped.weapon);
+                gameState.player.attack -= gameState.equipped.weapon.attack;
+            }
+            gameState.equipped.weapon = weapon;
+            gameState.player.attack += weapon.attack;
+            gameState.inventory.weapons.splice(idx, 1);
+            saveGame();
+            switchTab('equipment');
+        }
+
+        function equipArmorFromInventory(idx) {
+            const armor = gameState.inventory.armor[idx];
+            if (gameState.equipped.armor) {
+                gameState.inventory.armor.push(gameState.equipped.armor);
+                gameState.player.defense -= gameState.equipped.armor.defense;
+            }
+            gameState.equipped.armor = armor;
+            gameState.player.defense += armor.defense;
+            gameState.inventory.armor.splice(idx, 1);
+            saveGame();
+            switchTab('equipment');
+        }
+
+        function useItem(idx) {
+            const item = gameState.inventory.items[idx];
+            if (item.type === 'potion') {
+                gameState.player.hp = Math.min(gameState.player.maxHp, gameState.player.hp + 30);
+            } else if (item.type === 'mpPotion') {
+                gameState.player.mp = Math.min(gameState.player.maxMp, gameState.player.mp + 20);
+            } else if (item.type === 'fullPotion') {
+                gameState.player.hp = gameState.player.maxHp;
+                gameState.player.mp = gameState.player.maxMp;
+            }
+            gameState.inventory.items.splice(idx, 1);
+            saveGame();
+            switchTab('inventory');
+        }
+
+        window.addEventListener('load', function() {
+            initGame();
+            switchTab('stats');
+        });
+    </script>
+</body>
+</html>
