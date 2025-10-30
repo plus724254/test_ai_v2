@@ -247,6 +247,7 @@ HP: 35  MP: 25  攻擊: 8   防禦: 9  速度: 6
     </div>
 
     <script src="game.js"></script>
+    <script src="data.js"></script>
     <script>
         let selectedClass = null;
 
@@ -356,20 +357,36 @@ HP: 35  MP: 25  攻擊: 8   防禦: 9  速度: 6
             // 套用職業
             createCharacter(playerName, selectedClass);
 
-            // 顯示故事
-            alert(`
+            // 套用職業確認後才保存
+            saveGame();
+
+            // 顯示故事並進入遊戲
+            const classNames = {
+                warrior: '戰士',
+                mage: '法師',
+                rogue: '盜賊',
+                paladin: '聖騎'
+            };
+
+            const storyText = `
 歡迎，${playerName}！
 
-你是一位${selectedClass === 'warrior' ? '戰士' : selectedClass === 'mage' ? '法師' : selectedClass === 'rogue' ? '盜賊' : '聖騎'}。
+你是一位${classNames[selectedClass] || '冒險家'}。
 
 你的冒險，從現在開始...
 
 ${STORY.intro}
-            `);
+            `;
 
-            // 保存並進入遊戲
-            saveGame();
-            goToScene('town');
+            alert(storyText);
+
+            // 導航到城鎮場景
+            try {
+                window.location.href = 'scenes/town.html';
+            } catch(e) {
+                console.error('導航失敗:', e);
+                alert('進入遊戲失敗，請檢查文件路徑');
+            }
         }
 
         // 初始化菜單
